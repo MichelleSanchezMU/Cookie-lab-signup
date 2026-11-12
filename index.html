@@ -1,0 +1,1024 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Thursday Cookie Lab Signup</title>
+  <style>
+    :root {
+      --light-brown: #F3E9DC;
+      --card: #FBF6EF;
+      --card-edge: #E2CDB5;
+      --muted: #765A48;
+      --dark-brown: #4A2C1A;
+      --plum: #7A2E5C;
+      --success: #1E6B2E;
+      --error: #A4161A;
+    }
+    * { box-sizing: border-box; }
+
+    /* Rolling-pin mouse cursor (the tip of the left handle is the click point) */
+    html {
+      cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Cg transform='rotate(45 16 16)' stroke='%234A2C1A' stroke-width='1'%3E%3Crect x='1' y='14' width='7' height='4' rx='2' fill='%237A2E5C'/%3E%3Crect x='7.5' y='11' width='17' height='10' rx='2.5' fill='%23D9A066'/%3E%3Cline x1='9.5' y1='13.5' x2='22.5' y2='13.5' stroke='%23F1D3A8' stroke-width='1.5' stroke-linecap='round'/%3E%3Crect x='24' y='14' width='7' height='4' rx='2' fill='%237A2E5C'/%3E%3C/g%3E%3C/svg%3E") 5 5, auto;
+    }
+    .option, .chip, .attend, button, input[type="radio"], input[type="checkbox"] {
+      cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Cg transform='rotate(45 16 16)' stroke='%234A2C1A' stroke-width='1'%3E%3Crect x='1' y='14' width='7' height='4' rx='2' fill='%237A2E5C'/%3E%3Crect x='7.5' y='11' width='17' height='10' rx='2.5' fill='%23D9A066'/%3E%3Cline x1='9.5' y1='13.5' x2='22.5' y2='13.5' stroke='%23F1D3A8' stroke-width='1.5' stroke-linecap='round'/%3E%3Crect x='24' y='14' width='7' height='4' rx='2' fill='%237A2E5C'/%3E%3C/g%3E%3C/svg%3E") 5 5, pointer;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--light-brown);
+      color: var(--dark-brown);
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      font-size: 18px;
+      line-height: 1.5;
+    }
+
+    /* Scattered baking illustrations behind the form */
+    .scatter {
+      position: fixed;
+      inset: 0;
+      overflow: hidden;
+      pointer-events: none;
+      z-index: 0;
+    }
+    .scatter svg {
+      position: absolute;
+      height: auto;
+      filter: drop-shadow(0 4px 4px rgba(74, 44, 26, 0.15));
+    }
+
+    main {
+      position: relative;
+      z-index: 1;
+      max-width: 520px;
+      margin: 0 auto;
+      padding: 72px 16px;
+    }
+    .card {
+      background: var(--card);
+      border: 1.5px solid var(--card-edge);
+      border-radius: 18px;
+      padding: 28px 24px 24px;
+      box-shadow: 0 12px 32px rgba(74, 44, 26, 0.14);
+    }
+    h1 {
+      color: var(--plum);
+      font-size: 2rem;
+      line-height: 1.2;
+      margin: 0 0 12px;
+    }
+    .intro { margin: 0 0 28px; }
+    .field { margin-bottom: 24px; }
+    label.name-label, legend {
+      display: block;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+    input[type="text"] {
+      width: 100%;
+      font: inherit;
+      color: var(--dark-brown);
+      background: #FFFDF9;
+      border: 2px solid var(--dark-brown);
+      border-radius: 8px;
+      padding: 10px 12px;
+    }
+    input[type="text"]::placeholder { color: #8A6E5C; }
+    fieldset {
+      border: 2px solid var(--dark-brown);
+      border-radius: 8px;
+      padding: 12px 16px 8px;
+      margin: 0;
+    }
+    legend { padding: 0 6px; margin-bottom: 0; }
+    .option {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 0;
+    }
+    /* Each session's radio button is drawn as its cookie.
+       The real radio button stays on top (invisible) so mouse,
+       keyboard and screen readers work exactly as before. */
+    .option { position: relative; }
+    .option input[type="radio"] {
+      position: absolute;
+      left: 0;
+      width: 40px;
+      height: 40px;
+      margin: 0;
+      opacity: 0;
+    }
+    .pick {
+      width: 40px;
+      height: 40px;
+      flex-shrink: 0;
+      border-radius: 50%;
+      opacity: 0.75;
+      filter: grayscale(0.35);
+      transition: transform 0.15s ease, opacity 0.15s ease, filter 0.15s ease;
+    }
+    .option:hover .pick { opacity: 0.85; filter: grayscale(0.2); }
+    .option input:checked + .pick {
+      opacity: 1;
+      filter: none;
+      transform: scale(1.12);
+      outline: 3px solid var(--plum);
+      outline-offset: 2px;
+    }
+    .option input:focus + .pick {
+      box-shadow: 0 0 0 9px rgba(122, 46, 92, 0.25);
+    }
+    .option:has(input:checked) { font-weight: 700; color: var(--plum); }
+    @media (prefers-reduced-motion: reduce) {
+      .pick { transition: none; }
+    }
+
+    /* Thursday picker: one date card per week */
+    .chips {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      padding: 6px 0 8px;
+    }
+    @media (max-width: 480px) {
+      .chips { grid-template-columns: repeat(2, 1fr); }
+    }
+    .chip { position: relative; }
+    .chip input[type="radio"] {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      opacity: 0;
+    }
+    .chip span {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 8px 4px;
+      border: 2px solid var(--card-edge);
+      border-radius: 12px;
+      background: #FFFDF9;
+      line-height: 1.25;
+    }
+    .chip strong { font-size: 18px; }
+    .chip small { font-size: 16px; color: #8A6E5C; }
+    .chip:hover span { border-color: var(--plum); }
+    .chip input:checked + span {
+      background: var(--plum);
+      border-color: var(--plum);
+      color: var(--light-brown);
+    }
+    .chip input:checked + span small { color: var(--light-brown); }
+    .chip input:focus + span { box-shadow: 0 0 0 5px rgba(122, 46, 92, 0.25); }
+    button:disabled { opacity: 0.6; }
+
+    /* Roster */
+    .roster { margin-top: 24px; }
+    h2 {
+      color: var(--plum);
+      font-size: 1.5rem;
+      line-height: 1.2;
+      margin: 0 0 6px;
+    }
+    .roster-intro { margin: 0 0 16px; }
+    .roster-controls {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 8px;
+    }
+    @media (max-width: 480px) {
+      .roster-controls { grid-template-columns: 1fr; }
+    }
+    .roster-controls label { display: block; font-weight: 700; margin-bottom: 6px; }
+    select {
+      width: 100%;
+      font: inherit;
+      color: var(--dark-brown);
+      background: #FFFDF9;
+      border: 2px solid var(--dark-brown);
+      border-radius: 8px;
+      padding: 10px 8px;
+    }
+    select:focus-visible { outline: 3px solid var(--plum); outline-offset: 3px; }
+    .roster-status { margin: 8px 0 0; color: var(--muted); font-size: 16px; }
+    .roster-status:empty { display: none; }
+    .day {
+      border-top: 1.5px solid var(--card-edge);
+      margin-top: 16px;
+      padding-top: 14px;
+    }
+    .day-head {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 4px 12px;
+      margin-bottom: 4px;
+    }
+    h3 { font-size: 18px; margin: 0; }
+    .when { font-size: 16px; color: var(--muted); }
+    .when.soon { color: var(--plum); font-weight: 700; }
+    .slot {
+      display: grid;
+      grid-template-columns: 32px 1fr;
+      gap: 4px 10px;
+      padding: 8px 0;
+    }
+    .slot svg { width: 32px; height: 32px; grid-row: span 2; }
+    .slot-title { font-weight: 600; }
+    .count { color: var(--muted); font-weight: 400; }
+    .names {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      list-style: none;
+      margin: 0;
+      padding: 0;
+    }
+    .names li {
+      background: var(--light-brown);
+      border-radius: 999px;
+      padding: 2px 12px;
+      font-size: 16px;
+    }
+    .names li mark { background: #EBC9DD; color: inherit; border-radius: 3px; }
+    .names li { display: inline-flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+    .names li.came { background: #DCEBD8; }
+    .came-mark { color: var(--success); font-weight: 700; }
+    .attend { display: inline-flex; align-items: center; gap: 6px; }
+    .attend input {
+      accent-color: var(--success);
+      width: 18px;
+      height: 18px;
+      margin: 0;
+    }
+
+    /* "7 spots left" / "Full" beside each session in the form */
+    .option-name { flex: 1; min-width: 0; }
+    .spots {
+      font-size: 16px;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+    .spots.full { color: var(--error); font-weight: 700; }
+    @media (max-width: 480px) {
+      .option { flex-wrap: wrap; row-gap: 0; }
+      .spots { flex-basis: 100%; padding-left: 50px; }
+    }
+    .option input:disabled + .pick { filter: grayscale(1); opacity: 0.4; }
+    /* Small buttons for "Cancel this signup", "Yes, cancel" and "Keep" */
+    .mini {
+      font-size: 16px;
+      padding: 4px 12px;
+      border-radius: 999px;
+    }
+    .mini.secondary {
+      background: transparent;
+      color: var(--plum);
+      border: 1.5px solid var(--plum);
+    }
+    .mini.secondary:hover { background: #F6E3EE; }
+    .message-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 10px;
+    }
+    #message.notice { color: var(--dark-brown); }
+    .nobody { font-size: 16px; color: var(--muted); }
+    .invalid { border-color: var(--error) !important; }
+    button {
+      font: inherit;
+      font-weight: 700;
+      color: var(--light-brown);
+      background: var(--plum);
+      border: none;
+      border-radius: 8px;
+      padding: 12px 28px;
+    }
+    button:hover { background: #63244A; }
+    .actions { display: flex; flex-wrap: wrap; gap: 12px; }
+    .secondary-btn {
+      background: transparent;
+      color: var(--plum);
+      box-shadow: inset 0 0 0 2px var(--plum);
+    }
+    .secondary-btn:hover { background: #F6E3EE; }
+    .hint { margin: 10px 0 0; font-size: 16px; color: var(--muted); }
+    input:focus-visible, button:focus-visible {
+      outline: 3px solid var(--plum);
+      outline-offset: 3px;
+    }
+    #message {
+      margin-top: 20px;
+      padding: 14px 16px;
+      border: 2px solid currentColor;
+      border-radius: 8px;
+      background: #FFFDF9;
+      font-weight: 600;
+    }
+    #message.success { color: var(--success); }
+    #message.error { color: var(--error); }
+  </style>
+</head>
+<body>
+  <!-- Shared drawings: each one is defined once and placed several times below -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+    <defs>
+      <radialGradient id="dough" cx="40%" cy="35%" r="70%">
+        <stop offset="0" stop-color="#EDC287"/>
+        <stop offset="0.7" stop-color="#D49A58"/>
+        <stop offset="1" stop-color="#B9773B"/>
+      </radialGradient>
+      <radialGradient id="sugar" cx="40%" cy="35%" r="70%">
+        <stop offset="0" stop-color="#FCEBCF"/>
+        <stop offset="1" stop-color="#E5BD86"/>
+      </radialGradient>
+      <linearGradient id="wood" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#A8693A"/>
+        <stop offset="0.3" stop-color="#E0AA70"/>
+        <stop offset="0.6" stop-color="#C98B4E"/>
+        <stop offset="1" stop-color="#8E5528"/>
+      </linearGradient>
+      <linearGradient id="handle" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#A3527F"/>
+        <stop offset="0.5" stop-color="#7A2E5C"/>
+        <stop offset="1" stop-color="#521B3C"/>
+      </linearGradient>
+      <linearGradient id="milk" x1="0" y1="0" x2="1" y2="0">
+        <stop offset="0" stop-color="#FFFFFF"/>
+        <stop offset="1" stop-color="#ECE4DA"/>
+      </linearGradient>
+
+      <!-- Chocolate chip cookie -->
+      <symbol id="choc-cookie" viewBox="0 0 100 100">
+        <path d="M50 8 C62 7 74 12 82 20 C91 28 93 40 92 50 C93 62 88 73 80 81 C72 89 61 93 50 92 C38 93 27 88 19 80 C11 72 7 61 8 50 C7 38 12 27 20 19 C28 11 39 7 50 8 Z" fill="url(#dough)" stroke="#8E5528" stroke-width="1.5"/>
+        <g fill="none" stroke="#B57A44" stroke-width="1.5" stroke-linecap="round">
+          <path d="M28 42 q6 -4 12 0"/>
+          <path d="M58 64 q5 3 10 0"/>
+          <path d="M64 30 q4 4 2 9"/>
+        </g>
+        <g fill="#3B2213">
+          <ellipse cx="36" cy="30" rx="6" ry="4.5" transform="rotate(20 36 30)"/>
+          <ellipse cx="60" cy="22" rx="5" ry="4" transform="rotate(-15 60 22)"/>
+          <ellipse cx="74" cy="48" rx="6" ry="4.5" transform="rotate(35 74 48)"/>
+          <ellipse cx="48" cy="52" rx="5.5" ry="4.5"/>
+          <ellipse cx="26" cy="60" rx="5" ry="4" transform="rotate(-25 26 60)"/>
+          <ellipse cx="56" cy="78" rx="6" ry="4.5" transform="rotate(10 56 78)"/>
+          <ellipse cx="76" cy="70" rx="4.5" ry="3.5"/>
+          <ellipse cx="38" cy="80" rx="4" ry="3.5"/>
+        </g>
+        <g fill="#7A4E30">
+          <ellipse cx="34.5" cy="28.5" rx="1.8" ry="1.2"/>
+          <ellipse cx="58.5" cy="20.5" rx="1.6" ry="1.1"/>
+          <ellipse cx="72.5" cy="46.5" rx="1.8" ry="1.2"/>
+          <ellipse cx="46.5" cy="50.5" rx="1.8" ry="1.2"/>
+          <ellipse cx="54.5" cy="76.5" rx="1.8" ry="1.2"/>
+        </g>
+      </symbol>
+
+      <!-- Iced sugar cookie with sprinkles -->
+      <symbol id="sugar-cookie" viewBox="0 0 100 100">
+        <circle cx="50" cy="50" r="42" fill="url(#sugar)" stroke="#C9955C" stroke-width="1.5"/>
+        <path d="M50 18 C64 16 78 26 80 40 C84 52 78 66 68 74 C58 82 42 82 32 74 C22 66 16 54 20 42 C24 28 36 19 50 18 Z" fill="#D99BC0" stroke="#A24F80" stroke-width="1.2"/>
+        <path d="M32 36 C36 28 44 24 52 24" fill="none" stroke="#FFFFFF" stroke-width="4" stroke-linecap="round" opacity="0.5"/>
+        <g stroke-width="3" stroke-linecap="round">
+          <line x1="40" y1="44" x2="45" y2="41" stroke="#FFFFFF"/>
+          <line x1="58" y1="38" x2="60" y2="43" stroke="#7A2E5C"/>
+          <line x1="66" y1="56" x2="71" y2="54" stroke="#FFFFFF"/>
+          <line x1="36" y1="60" x2="38" y2="65" stroke="#7A2E5C"/>
+          <line x1="50" y1="58" x2="55" y2="60" stroke="#F3E9DC"/>
+          <line x1="52" y1="70" x2="57" y2="68" stroke="#7A2E5C"/>
+          <line x1="30" y1="48" x2="31" y2="53" stroke="#F3E9DC"/>
+        </g>
+      </symbol>
+
+      <!-- Oatmeal cookie with oat flakes -->
+      <radialGradient id="oat" cx="40%" cy="35%" r="70%">
+        <stop offset="0" stop-color="#E2B57A"/>
+        <stop offset="0.7" stop-color="#C08A4C"/>
+        <stop offset="1" stop-color="#A06A34"/>
+      </radialGradient>
+      <symbol id="oatmeal-cookie" viewBox="0 0 100 100">
+        <path d="M50 9 C60 6 73 11 81 19 C90 27 94 39 91 50 C94 61 89 74 81 81 C72 90 60 94 50 91 C39 94 27 89 19 81 C10 73 6 61 9 50 C6 39 11 27 19 19 C27 10 40 6 50 9 Z" fill="url(#oat)" stroke="#7E4E22" stroke-width="1.5"/>
+        <g fill="#F2DFB8" stroke="#C9A36C" stroke-width="0.8">
+          <ellipse cx="32" cy="32" rx="6" ry="3" transform="rotate(-30 32 32)"/>
+          <ellipse cx="58" cy="26" rx="5.5" ry="2.8" transform="rotate(20 58 26)"/>
+          <ellipse cx="74" cy="44" rx="6" ry="3" transform="rotate(70 74 44)"/>
+          <ellipse cx="44" cy="50" rx="6.5" ry="3" transform="rotate(10 44 50)"/>
+          <ellipse cx="24" cy="58" rx="5" ry="2.6" transform="rotate(50 24 58)"/>
+          <ellipse cx="62" cy="62" rx="6" ry="3" transform="rotate(-40 62 62)"/>
+          <ellipse cx="44" cy="76" rx="5.5" ry="2.8" transform="rotate(-10 44 76)"/>
+          <ellipse cx="72" cy="76" rx="4.5" ry="2.4" transform="rotate(30 72 76)"/>
+        </g>
+        <g fill="#8E5528" opacity="0.7">
+          <circle cx="40" cy="38" r="2"/>
+          <circle cx="66" cy="38" r="1.8"/>
+          <circle cx="30" cy="70" r="2"/>
+          <circle cx="56" cy="86" r="1.6"/>
+          <circle cx="80" cy="58" r="1.8"/>
+        </g>
+      </symbol>
+
+      <!-- Glass of milk -->
+      <symbol id="milk-glass" viewBox="0 0 70 110">
+        <path d="M9.6 30 Q22 34 35 30 Q48 26 60.4 30 L56 98 Q55.5 104 49 104 L21 104 Q14.5 104 14 98 Z" fill="url(#milk)"/>
+        <ellipse cx="35" cy="30" rx="25.4" ry="4" fill="#FFFFFF" stroke="#E2D6C6" stroke-width="1"/>
+        <path d="M8 8 L14 98 Q14.5 104 21 104 L49 104 Q55.5 104 56 98 L62 8" fill="rgba(255,255,255,0.25)" stroke="#6B4A36" stroke-width="2" stroke-linejoin="round"/>
+        <ellipse cx="35" cy="8" rx="27" ry="3.5" fill="rgba(255,255,255,0.4)" stroke="#6B4A36" stroke-width="2"/>
+        <line x1="16" y1="16" x2="20" y2="92" stroke="#FFFFFF" stroke-width="4" stroke-linecap="round" opacity="0.8"/>
+        <line x1="50" y1="40" x2="48" y2="90" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" opacity="0.6"/>
+      </symbol>
+
+      <!-- Rolling pin -->
+      <symbol id="rolling-pin" viewBox="0 0 200 50">
+        <rect x="4" y="18" width="34" height="14" rx="7" fill="url(#handle)" stroke="#4A2C1A" stroke-width="1.5"/>
+        <rect x="34" y="15" width="8" height="20" rx="3" fill="#5A1F43"/>
+        <rect x="40" y="6" width="120" height="38" rx="8" fill="url(#wood)" stroke="#4A2C1A" stroke-width="1.5"/>
+        <g fill="none" stroke="#A8693A" stroke-width="1.2" opacity="0.7">
+          <path d="M52 17 C80 14 110 20 148 16"/>
+          <path d="M56 31 C90 34 118 28 150 32"/>
+          <ellipse cx="112" cy="24" rx="5" ry="2.2"/>
+        </g>
+        <rect x="46" y="11" width="108" height="4" rx="2" fill="#FFFFFF" opacity="0.35"/>
+        <rect x="158" y="15" width="8" height="20" rx="3" fill="#5A1F43"/>
+        <rect x="162" y="18" width="34" height="14" rx="7" fill="url(#handle)" stroke="#4A2C1A" stroke-width="1.5"/>
+      </symbol>
+
+      <!-- Cookie cutters: a darker copy underneath gives each one a metal edge -->
+      <symbol id="star-cutter" viewBox="0 0 100 100">
+        <path transform="translate(0 5)" d="M50 10 L60.6 35.4 L88 37.6 L67.1 55.6 L73.5 82.4 L50 68 L26.5 82.4 L32.9 55.6 L12 37.6 L39.4 35.4 Z" fill="none" stroke="#521B3C" stroke-width="5" stroke-linejoin="round"/>
+        <path d="M50 10 L60.6 35.4 L88 37.6 L67.1 55.6 L73.5 82.4 L50 68 L26.5 82.4 L32.9 55.6 L12 37.6 L39.4 35.4 Z" fill="none" stroke="#7A2E5C" stroke-width="5" stroke-linejoin="round"/>
+        <path d="M50 10 L60.6 35.4 L88 37.6 L67.1 55.6 L73.5 82.4 L50 68 L26.5 82.4 L32.9 55.6 L12 37.6 L39.4 35.4 Z" fill="none" stroke="#C98BB0" stroke-width="1.2" stroke-linejoin="round"/>
+      </symbol>
+      <symbol id="heart-cutter" viewBox="0 0 100 100">
+        <path transform="translate(0 5)" d="M50 86 C20 66 8 46 16 30 C23 16 42 15 50 30 C58 15 77 16 84 30 C92 46 80 66 50 86 Z" fill="none" stroke="#521B3C" stroke-width="5" stroke-linejoin="round"/>
+        <path d="M50 86 C20 66 8 46 16 30 C23 16 42 15 50 30 C58 15 77 16 84 30 C92 46 80 66 50 86 Z" fill="none" stroke="#7A2E5C" stroke-width="5" stroke-linejoin="round"/>
+        <path d="M50 86 C20 66 8 46 16 30 C23 16 42 15 50 30 C58 15 77 16 84 30 C92 46 80 66 50 86 Z" fill="none" stroke="#C98BB0" stroke-width="1.2" stroke-linejoin="round"/>
+      </symbol>
+      <symbol id="gingerbread-cutter" viewBox="0 0 100 104">
+        <path transform="translate(0 5)" d="M44 30 A14 14 0 1 1 56 30 L78 34 Q86 36 84 44 Q82 50 74 48 L62 46 L66 70 L74 88 Q76 95 69 96 Q64 96 62 91 L50 72 L38 91 Q36 96 31 96 Q24 95 26 88 L34 70 L38 46 L26 48 Q18 50 16 44 Q14 36 22 34 Z" fill="none" stroke="#521B3C" stroke-width="5" stroke-linejoin="round"/>
+        <path d="M44 30 A14 14 0 1 1 56 30 L78 34 Q86 36 84 44 Q82 50 74 48 L62 46 L66 70 L74 88 Q76 95 69 96 Q64 96 62 91 L50 72 L38 91 Q36 96 31 96 Q24 95 26 88 L34 70 L38 46 L26 48 Q18 50 16 44 Q14 36 22 34 Z" fill="none" stroke="#7A2E5C" stroke-width="5" stroke-linejoin="round"/>
+        <path d="M44 30 A14 14 0 1 1 56 30 L78 34 Q86 36 84 44 Q82 50 74 48 L62 46 L66 70 L74 88 Q76 95 69 96 Q64 96 62 91 L50 72 L38 91 Q36 96 31 96 Q24 95 26 88 L34 70 L38 46 L26 48 Q18 50 16 44 Q14 36 22 34 Z" fill="none" stroke="#C98BB0" stroke-width="1.2" stroke-linejoin="round"/>
+      </symbol>
+    </defs>
+  </svg>
+
+  <!-- Decorative only: hidden from screen readers -->
+  <div class="scatter" aria-hidden="true">
+    <svg viewBox="0 0 200 50" style="left:2%; top:5%; width:170px; transform:rotate(-22deg)"><use href="#rolling-pin"/></svg>
+    <svg viewBox="0 0 100 100" style="left:80%; top:3%; width:100px; transform:rotate(12deg)"><use href="#choc-cookie"/></svg>
+    <svg viewBox="0 0 100 104" style="left:88%; top:22%; width:70px; transform:rotate(-10deg)"><use href="#gingerbread-cutter"/></svg>
+    <svg viewBox="0 0 100 100" style="left:14%; top:24%; width:64px; transform:rotate(30deg)"><use href="#sugar-cookie"/></svg>
+    <svg viewBox="0 0 100 100" style="left:4%; top:42%; width:78px; transform:rotate(-14deg)"><use href="#star-cutter"/></svg>
+    <svg viewBox="0 0 70 110" style="left:84%; top:42%; width:70px; transform:rotate(6deg)"><use href="#milk-glass"/></svg>
+    <svg viewBox="0 0 100 100" style="left:6%; top:62%; width:96px; transform:rotate(-30deg)"><use href="#oatmeal-cookie"/></svg>
+    <svg viewBox="0 0 100 100" style="left:80%; top:66%; width:84px; transform:rotate(14deg)"><use href="#sugar-cookie"/></svg>
+    <svg viewBox="0 0 70 110" style="left:16%; top:82%; width:56px; transform:rotate(-8deg)"><use href="#milk-glass"/></svg>
+    <svg viewBox="0 0 100 100" style="left:88%; top:86%; width:72px; transform:rotate(-16deg)"><use href="#heart-cutter"/></svg>
+    <svg viewBox="0 0 200 50" style="left:58%; top:90%; width:150px; transform:rotate(18deg)"><use href="#rolling-pin"/></svg>
+    <svg viewBox="0 0 100 100" style="left:36%; top:91%; width:58px; transform:rotate(40deg)"><use href="#choc-cookie"/></svg>
+  </div>
+
+  <main>
+    <div class="card">
+      <h1>Thursday Cookie Lab Signup</h1>
+      <p class="intro">We bake on Thursday in the Great Hall. Type your name, pick a Thursday and a session, then press Sign Up.</p>
+
+      <form id="signup-form" novalidate>
+        <div class="field">
+          <label class="name-label" for="attendee-name">Attendee name</label>
+          <input type="text" id="attendee-name" name="attendee-name" placeholder="e.g., Brock Powell" autocomplete="off">
+        </div>
+
+        <div class="field">
+          <fieldset id="thursday-group">
+            <legend>Choose a Thursday</legend>
+            <div class="chips" id="thursday-options"></div>
+          </fieldset>
+        </div>
+
+        <div class="field">
+          <fieldset id="session-group">
+            <legend>Choose a session</legend>
+            <label class="option"><input type="radio" name="session" value="Chocolate Chip Cookies (3:00 PM)"><svg class="pick" viewBox="0 0 100 100" aria-hidden="true" focusable="false"><use href="#choc-cookie"/></svg> <span class="option-name">Chocolate Chip Cookies (3:00 PM)</span><span class="spots"></span></label>
+            <label class="option"><input type="radio" name="session" value="Sugar Cookies (4:00 PM)"><svg class="pick" viewBox="0 0 100 100" aria-hidden="true" focusable="false"><use href="#sugar-cookie"/></svg> <span class="option-name">Sugar Cookies (4:00 PM)</span><span class="spots"></span></label>
+            <label class="option"><input type="radio" name="session" value="Oatmeal Cookies (5:00 PM)"><svg class="pick" viewBox="0 0 100 100" aria-hidden="true" focusable="false"><use href="#oatmeal-cookie"/></svg> <span class="option-name">Oatmeal Cookies (5:00 PM)</span><span class="spots"></span></label>
+          </fieldset>
+        </div>
+
+        <div class="actions">
+          <button type="submit">Sign Up</button>
+          <button type="button" id="cancel-signup" class="secondary-btn">Cancel My Signup</button>
+        </div>
+        <p class="hint">To cancel, enter your name and pick the same Thursday and session you signed up for, then press Cancel My Signup.</p>
+      </form>
+
+      <div id="message" role="status" aria-live="polite" hidden></div>
+    </div>
+
+    <section class="card roster" aria-labelledby="roster-title">
+      <h2 id="roster-title">Roster</h2>
+      <p class="roster-intro">See who's signed up for each session. Choose past Thursdays to look back.</p>
+      <div class="roster-controls">
+        <div>
+          <label for="roster-search">Search names</label>
+          <input type="text" id="roster-search" placeholder="e.g., Brock" autocomplete="off">
+        </div>
+        <div>
+          <label for="roster-view">Show</label>
+          <select id="roster-view">
+            <option value="" selected>Choose Thursdays…</option>
+            <option value="upcoming">Upcoming Thursdays</option>
+            <option value="past">Past Thursdays</option>
+            <option value="all">All Thursdays</option>
+          </select>
+        </div>
+      </div>
+      <p class="roster-status" id="roster-status" role="status" aria-live="polite">Loading the roster…</p>
+      <div id="roster-list"></div>
+    </section>
+  </main>
+
+  <script>
+    const form = document.getElementById('signup-form');
+    const nameInput = document.getElementById('attendee-name');
+    const sessionGroup = document.getElementById('session-group');
+    const thursdayGroup = document.getElementById('thursday-group');
+    const radios = form.querySelectorAll('input[name="session"]');
+    const message = document.getElementById('message');
+
+    // Build the next four Thursdays, starting with this week's.
+    // If today is Thursday, today counts as this week.
+    const WEEKS = 4;
+    const thursdayOptions = document.getElementById('thursday-options');
+    const isoDate = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    const upcomingIsos = [];
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const daysUntilThursday = (4 - today.getDay() + 7) % 7;
+    for (let week = 0; week < WEEKS; week++) {
+      const date = new Date(today);
+      date.setDate(today.getDate() + daysUntilThursday + week * 7);
+      const shortDate = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      const fullDate = date.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+      const note = week === 0 ? 'This week' : week === 1 ? 'Next week' : `In ${week} weeks`;
+
+      const label = document.createElement('label');
+      label.className = 'chip';
+      const input = document.createElement('input');
+      input.type = 'radio';
+      input.name = 'thursday';
+      input.value = fullDate;
+      input.dataset.iso = isoDate(date);
+      upcomingIsos.push(input.dataset.iso);
+      input.setAttribute('aria-label', `${fullDate} (${note.toLowerCase()})`);
+      if (week === 0) input.checked = true; // start on this week's Thursday
+      const face = document.createElement('span');
+      face.innerHTML = `<strong>${shortDate}</strong><small>${note}</small>`;
+      label.append(input, face);
+      thursdayOptions.append(label);
+    }
+    const thursdays = form.querySelectorAll('input[name="thursday"]');
+
+    // Show one message under Sign Up. Optional buttons go on a row below the text.
+    function showMessage(text, kind, ...buttons) {
+      message.replaceChildren(text);
+      if (buttons.length) {
+        const row = document.createElement('div');
+        row.className = 'message-actions';
+        row.append(...buttons);
+        message.append(row);
+      }
+      message.className = kind;
+      message.hidden = false;
+    }
+
+    function smallButton(label, style, onClick) {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = `mini ${style}`;
+      b.textContent = label;
+      b.addEventListener('click', onClick);
+      return b;
+    }
+
+    function showSaved(saved) {
+      showMessage(`✓ Thanks, ${saved.name}! You're signed up for ${saved.session} on ${saved.dateLabel}.`, 'success');
+    }
+
+    // Join fixes into one sentence: "A", "A and B", "A, B, and C"
+    function joinFixes(fixes) {
+      if (fixes.length === 1) return fixes[0];
+      if (fixes.length === 2) return `${fixes[0]} and ${fixes[1]}`;
+      return `${fixes.slice(0, -1).join(', ')}, and ${fixes[fixes.length - 1]}`;
+    }
+
+    // ---------- Saved signups ----------
+    // On the published page, signups are saved in the page's shared database.
+    // Anywhere else (like opening this file from your computer) they are kept
+    // only until the page is closed.
+    const signUpButton = form.querySelector('button[type="submit"]');
+    const rosterStatus = document.getElementById('roster-status');
+    let signups = []; // { id, name, session, date: "YYYY-MM-DD", createdAt }
+
+    // Each session on each Thursday holds this many people
+    const SPOTS_PER_SESSION = 10;
+
+    // Who is viewing, so people can change or cancel only their own signups.
+    // Club leaders (the page's owner and editors) can also mark attendance.
+    let myId = null;
+    let isLeader = false;
+
+    function memoryStore() {
+      let next = 1;
+      isLeader = true; // on your own computer, you're the club leader
+      return {
+        saved: false,
+        async add(data) { const id = `m${next++}`; signups = [...signups, { id, ...data }]; renderRoster(); return id; },
+        async replace(id, data) { signups = signups.map((s) => (s.id === id ? { id, ...data } : s)); renderRoster(); return id; },
+        async remove(id) { signups = signups.filter((s) => s.id !== id); renderRoster(); },
+        async markAttended(id, attended) { signups = signups.map((s) => (s.id === id ? { ...s, attended } : s)); renderRoster(); },
+      };
+    }
+
+    async function connectStore() {
+      const db = window.claude?.use ? await window.claude.use('db') : null;
+      if (!db) {
+        rosterStatus.textContent = 'This copy of the page keeps signups only until you close it.';
+        return memoryStore();
+      }
+
+      // Viewers who can only look (not sign up) see the roster but not the form.
+      const user = await window.claude.use('user');
+      if (user) {
+        myId = await user.id();
+        isLeader = await user.canEdit();
+      }
+      if (user && (await user.can('data.write')) === false) {
+        signUpButton.disabled = true;
+        showMessage('You can see the roster, but this page is view-only for you, so you can\'t sign up here.', 'error');
+      }
+
+      const signupsRef = db.collection('signups');
+      const slowTimer = setTimeout(() => {
+        rosterStatus.textContent = 'The roster can\'t be reached right now. It will appear when the connection comes back.';
+      }, 10000);
+      signupsRef.orderBy('createdAt').limit(1000).onSnapshot(
+        (snap) => {
+          if (!snap.metadata.fromCache) {
+            clearTimeout(slowTimer);
+            rosterStatus.textContent = '';
+          }
+          signups = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+          renderRoster();
+        },
+        () => {
+          clearTimeout(slowTimer);
+          rosterStatus.textContent = 'The roster stopped updating. Reload the page to see the latest signups.';
+        },
+      );
+      renderRoster();
+      return {
+        saved: true,
+        async add(data) { const ref = await signupsRef.add(data); return ref.id; },
+        async replace(id, data) { await signupsRef.doc(id).set(data); return id; },
+        async remove(id) { await signupsRef.doc(id).delete(); },
+        async markAttended(id, attended) { await signupsRef.doc(id).update({ attended }); },
+      };
+    }
+    const storeReady = connectStore();
+
+    // "brock  POWELL " and "Brock Powell" are the same person
+    const sameName = (a, b) => a.trim().replace(/\s+/g, ' ').toLowerCase() === b.trim().replace(/\s+/g, ' ').toLowerCase();
+    const dayLabel = (iso) => dateFromIso(iso).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+
+    // A signup belongs to whoever made it. Signups that don't record who made
+    // them (like the club's example names) can be changed by anyone who knows
+    // the name and time slot.
+    function ownsSignup(s) {
+      if (!s.by) return true;
+      return myId !== null && s.by === myId;
+    }
+
+    const takenSpots = (iso, session) => signups.filter((s) => s.date === iso && s.session === session).length;
+    const spotsLeft = (iso, session) => Math.max(0, SPOTS_PER_SESSION - takenSpots(iso, session));
+
+    // Show "7 spots left" or "Full" beside each session for the chosen Thursday.
+    // A full session can't be picked.
+    function updateSpots() {
+      const thursday = form.querySelector('input[name="thursday"]:checked');
+      radios.forEach((radio) => {
+        const label = radio.closest('.option');
+        const tag = label.querySelector('.spots');
+        if (!thursday) { tag.textContent = ''; radio.disabled = false; return; }
+        const left = spotsLeft(thursday.dataset.iso, radio.value);
+        tag.textContent = left === 0 ? 'Full' : `${left} ${left === 1 ? 'spot' : 'spots'} left`;
+        tag.classList.toggle('full', left === 0);
+        radio.disabled = left === 0 && !radio.checked;
+      });
+    }
+    thursdayOptions.addEventListener('change', updateSpots);
+
+    // Save a signup. One name gets one spot per Thursday:
+    // - the same session again is a duplicate and is refused
+    // - a different session switches the person's spot (only their own)
+    // - a session with no spots left is refused
+    async function saveSignup(data) {
+      const store = await storeReady;
+      const existing = signups.find((s) => s.date === data.date && sameName(s.name, data.name));
+      if (existing) {
+        if (existing.session === data.session) throw { code: 'duplicate', existing };
+        if (!ownsSignup(existing)) throw { code: 'taken', existing };
+      }
+      if (spotsLeft(data.date, data.session) === 0) throw { code: 'full', data };
+      if (existing) return store.replace(existing.id, { ...data, createdAt: existing.createdAt, by: existing.by ?? data.by });
+      return store.add(data);
+    }
+
+    async function cancelSignup(id) {
+      const store = await storeReady;
+      await store.remove(id);
+    }
+
+    // Cancel My Signup: the name, Thursday and session must match a signup exactly
+    const cancelButton = document.getElementById('cancel-signup');
+    cancelButton.addEventListener('click', async () => {
+      const entry = readForm();
+      if (!entry) return;
+      const { name, thursday, selected } = entry;
+      await storeReady;
+
+      const match = signups.find((s) => s.date === thursday.dataset.iso && s.session === selected.value && sameName(s.name, name));
+      if (!match) {
+        showMessage(`⚠ There's no signup for ${name} in ${selected.value} on ${thursday.value}. Check that the name, Thursday and session match your signup.`, 'error');
+        return;
+      }
+      if (!ownsSignup(match)) {
+        showMessage(`⚠ ${match.name}'s spot can only be canceled by the person who made the signup.`, 'error');
+        return;
+      }
+
+      const keep = smallButton('Keep it', 'secondary', () => {
+        message.hidden = true;
+        cancelButton.focus();
+      });
+      const yes = smallButton('Yes, cancel', 'primary', async () => {
+        yes.disabled = true;
+        try {
+          await cancelSignup(match.id);
+          showMessage(`${match.name}'s signup for ${match.session} on ${thursday.value} was canceled.`, 'notice');
+          cancelButton.focus();
+        } catch {
+          yes.disabled = false;
+          showMessage('⚠ The signup couldn\'t be canceled. Please try again.', 'error', yes, keep);
+        }
+      });
+      showMessage(`Cancel ${match.name}'s spot in ${match.session} on ${thursday.value}?`, 'notice', yes, keep);
+      yes.focus();
+    });
+
+    // Check the name, Thursday and session. Shows what's missing and returns null,
+    // or returns the filled-in choices. Used by both Sign Up and Cancel My Signup.
+    function readForm() {
+      const name = nameInput.value.trim();
+      const thursday = form.querySelector('input[name="thursday"]:checked');
+      const selected = form.querySelector('input[name="session"]:checked');
+      const nameMissing = name === '';
+      const thursdayMissing = !thursday;
+      const sessionMissing = !selected;
+
+      nameInput.classList.toggle('invalid', nameMissing);
+      thursdayGroup.classList.toggle('invalid', thursdayMissing);
+      sessionGroup.classList.toggle('invalid', sessionMissing);
+      nameInput.setAttribute('aria-invalid', nameMissing);
+
+      const fixes = [];
+      if (nameMissing) fixes.push('enter your name');
+      if (thursdayMissing) fixes.push('choose a Thursday');
+      if (sessionMissing) fixes.push('choose a session');
+
+      if (fixes.length > 0) {
+        showMessage(`⚠ Please ${joinFixes(fixes)}.`, 'error');
+        if (nameMissing) nameInput.focus();
+        else if (thursdayMissing) thursdays[0].focus();
+        else radios[0].focus();
+        return null;
+      }
+      return { name, thursday, selected };
+    }
+
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const entry = readForm();
+      if (entry) {
+        const { name, thursday, selected } = entry;
+        signUpButton.disabled = true;
+        try {
+          const id = await saveSignup({
+            name,
+            session: selected.value,
+            date: thursday.dataset.iso,
+            createdAt: new Date().toISOString(),
+            by: myId,
+          });
+          showSaved({ id, name, session: selected.value, dateLabel: thursday.value });
+        } catch (err) {
+          const code = err && err.code;
+          if (code === 'duplicate') {
+            showMessage(`⚠ ${err.existing.name} is already signed up for ${err.existing.session} on ${dayLabel(err.existing.date)}.`, 'error');
+          } else if (code === 'taken') {
+            showMessage(`⚠ ${err.existing.name} is already signed up for ${err.existing.session} on ${dayLabel(err.existing.date)}. Only the person who signed up can change it.`, 'error');
+          } else if (code === 'full') {
+            showMessage(`⚠ ${err.data.session} on ${dayLabel(err.data.date)} is full. Please choose another session or Thursday.`, 'error');
+          } else if (code === 'invalid_argument') {
+            showMessage('⚠ Your signup couldn\'t be saved because this page is view-only for you.', 'error');
+          } else {
+            showMessage('⚠ Your signup couldn\'t be saved. Please press Sign Up again.', 'error');
+          }
+        } finally {
+          signUpButton.disabled = false;
+        }
+      }
+    });
+
+    // ---------- Roster ----------
+    const rosterSearch = document.getElementById('roster-search');
+    const rosterView = document.getElementById('roster-view');
+    const rosterList = document.getElementById('roster-list');
+    const sessionNames = [...radios].map((r) => r.value);
+    const sessionArt = ['#choc-cookie', '#sugar-cookie', '#oatmeal-cookie'];
+    const thisThursday = upcomingIsos[0];
+    let shownDateOptions = '';
+
+    const dateFromIso = (iso) => {
+      const [y, m, d] = iso.split('-').map(Number);
+      return new Date(y, m - 1, d);
+    };
+    const longDate = (iso) => dateFromIso(iso).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+    const shortDate = (iso) => dateFromIso(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+
+    function make(tag, className, text) {
+      const el = document.createElement(tag);
+      if (className) el.className = className;
+      if (text !== undefined) el.textContent = text;
+      return el;
+    }
+
+    // Put a highlight around the part of a name that matches the search
+    function nameWithMatch(name, query) {
+      const li = make('li');
+      const at = query ? name.toLowerCase().indexOf(query) : -1;
+      if (at < 0) { li.textContent = name; return li; }
+      li.append(name.slice(0, at), make('mark', '', name.slice(at, at + query.length)), name.slice(at + query.length));
+      return li;
+    }
+
+    // Attendance can be marked once a Thursday has arrived (today or earlier)
+    const todayIso = isoDate(today);
+    const attendanceOpen = (iso) => iso <= todayIso;
+
+    // One name on the roster.
+    // Club leaders get a checkbox on Thursdays that have happened, to mark who came.
+    // Everyone else sees a ✓ beside the people who came.
+    function nameItem(s, query) {
+      const li = nameWithMatch(s.name, query);
+      if (s.attended) li.classList.add('came');
+      if (!attendanceOpen(s.date)) return li;
+
+      if (isLeader) {
+        const label = make('label', 'attend');
+        const box = document.createElement('input');
+        box.type = 'checkbox';
+        box.checked = !!s.attended;
+        box.setAttribute('aria-label', `${s.name} came to ${s.session} on ${dayLabel(s.date)}`);
+        box.addEventListener('change', async () => {
+          box.disabled = true;
+          try {
+            const store = await storeReady;
+            await store.markAttended(s.id, box.checked);
+          } catch {
+            box.checked = !box.checked;
+            box.disabled = false;
+            rosterStatus.textContent = `Attendance for ${s.name} couldn't be saved. Please try again.`;
+          }
+        });
+        label.append(box, ...li.childNodes);
+        li.replaceChildren(label);
+      } else if (s.attended) {
+        li.append(make('span', 'came-mark', ' ✓'));
+        li.setAttribute('aria-label', `${s.name}, came`);
+      }
+      return li;
+    }
+
+    // The "Show" menu lists each Thursday that has signups, so any one can be picked
+    function updateDateOptions(allIsos) {
+      const key = allIsos.join(',');
+      if (key === shownDateOptions) return;
+      shownDateOptions = key;
+      const current = rosterView.value;
+      rosterView.querySelectorAll('option[data-date]').forEach((o) => o.remove());
+      const group = rosterView.querySelector('optgroup') || rosterView.appendChild(Object.assign(document.createElement('optgroup'), { label: 'One Thursday' }));
+      allIsos.forEach((iso) => {
+        const option = make('option', '', shortDate(iso));
+        option.value = iso;
+        option.dataset.date = '';
+        group.append(option);
+      });
+      rosterView.value = [...rosterView.options].some((o) => o.value === current) ? current : '';
+    }
+
+    function renderRoster() {
+      updateSpots(); // keep the form's "spots left" in step with the latest signups
+      const query = rosterSearch.value.trim().toLowerCase();
+      const view = rosterView.value;
+
+      const allIsos = [...new Set([...upcomingIsos, ...signups.map((s) => s.date)])];
+      const upcoming = allIsos.filter((iso) => iso >= thisThursday).sort();
+      const past = allIsos.filter((iso) => iso < thisThursday).sort().reverse();
+      updateDateOptions([...upcoming, ...past]);
+
+      // Keep the roster tucked away until someone searches or picks Thursdays
+      if (!query && view === '') {
+        rosterList.replaceChildren(make('p', 'nobody', 'Type a name or choose Thursdays to see who\'s signed up.'));
+        return;
+      }
+
+      let dates;
+      if (view === 'upcoming') dates = upcoming;
+      else if (view === 'past') dates = past;
+      else if (view === 'all' || view === '') dates = [...upcoming, ...past]; // a search with no Thursdays chosen looks everywhere
+      else dates = [view];
+
+      rosterList.replaceChildren();
+      let shownDays = 0;
+
+      dates.forEach((iso) => {
+        const daySignups = signups.filter((s) => s.date === iso);
+        const matches = daySignups.filter((s) => !query || s.name.toLowerCase().includes(query));
+        if (query && matches.length === 0) return; // searching: skip days with no match
+
+        const day = make('div', 'day');
+        const head = make('div', 'day-head');
+        head.append(make('h3', '', longDate(iso)));
+        let when = 'Past';
+        if (iso === thisThursday) when = 'This week';
+        else if (iso > thisThursday) when = 'Coming up';
+        let summary = `${when} · ${daySignups.length} signed up`;
+        if (attendanceOpen(iso)) summary += ` · ${daySignups.filter((s) => s.attended).length} came`;
+        head.append(make('span', iso === thisThursday ? 'when soon' : 'when', summary));
+        day.append(head);
+
+        sessionNames.forEach((session, i) => {
+          const people = matches.filter((s) => s.session === session);
+          const total = daySignups.filter((s) => s.session === session).length;
+          if (query && people.length === 0) return;
+
+          const slot = make('div', 'slot');
+          const art = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+          art.setAttribute('viewBox', '0 0 100 100');
+          art.setAttribute('aria-hidden', 'true');
+          const use = document.createElementNS('http://www.w3.org/2000/svg', 'use');
+          use.setAttribute('href', sessionArt[i]);
+          art.append(use);
+          const title = make('div', 'slot-title', session + ' ');
+          title.append(make('span', 'count', `${total} of ${SPOTS_PER_SESSION} spots`));
+          slot.append(art, title);
+
+          if (people.length) {
+            const list = make('ul', 'names');
+            [...people]
+              .sort((a, b) => a.name.localeCompare(b.name))
+              .forEach((s) => list.append(nameItem(s, query)));
+            slot.append(list);
+          } else {
+            slot.append(make('div', 'nobody', 'No one yet'));
+          }
+          day.append(slot);
+        });
+
+        rosterList.append(day);
+        shownDays++;
+      });
+
+      if (shownDays === 0) {
+        let text = 'There are no signups to show yet.';
+        if (query) text = `No one named "${rosterSearch.value.trim()}" is signed up for these Thursdays.`;
+        else if (view === 'past') text = 'There are no past Thursdays with signups yet.';
+        rosterList.append(make('p', 'nobody', text));
+      }
+    }
+
+    rosterSearch.addEventListener('input', renderRoster);
+    rosterView.addEventListener('change', renderRoster);
+    renderRoster();
+  </script>
+</body>
+</html>
