@@ -291,6 +291,29 @@
       margin-top: 10px;
     }
     #message.notice { color: var(--dark-brown); }
+
+    /* Club leader code box */
+    .leader {
+      border-top: 1.5px solid var(--card-edge);
+      margin-top: 20px;
+      padding-top: 12px;
+      font-size: 16px;
+    }
+    .leader summary { color: var(--plum); font-weight: 600; }
+    .leader form { margin-top: 10px; }
+    .leader label { display: block; font-weight: 700; margin-bottom: 6px; }
+    .leader-row { display: flex; gap: 8px; }
+    .leader-row input {
+      flex: 1;
+      min-width: 0;
+      font: inherit;
+      color: var(--dark-brown);
+      background: #FFFDF9;
+      border: 2px solid var(--dark-brown);
+      border-radius: 8px;
+      padding: 6px 10px;
+    }
+    .leader summary, .leader-row input { cursor: inherit; }
     .nobody { font-size: 16px; color: var(--muted); }
     .invalid { border-color: var(--error) !important; }
     button {
@@ -543,6 +566,18 @@
       </div>
       <p class="roster-status" id="roster-status" role="status" aria-live="polite">Loading the roster…</p>
       <div id="roster-list"></div>
+
+      <details class="leader" id="leader-box" hidden>
+        <summary>Club leader? Mark attendance</summary>
+        <form id="leader-form">
+          <label for="leader-code">Leader code</label>
+          <div class="leader-row">
+            <input type="password" id="leader-code" autocomplete="off">
+            <button type="submit" class="mini primary">Unlock</button>
+          </div>
+        </form>
+        <p class="roster-status" id="leader-note" role="status" aria-live="polite"></p>
+      </details>
     </section>
   </main>
 
@@ -621,94 +656,170 @@
     }
 
     // ---------- Saved signups ----------
-    // On the published page, signups are saved in the page's shared database.
-    // Anywhere else (like opening this file from your computer) they are kept
-    // only until the page is closed.
+    // When the page comes from the club's server (python app.py, or Render),
+    // signups are saved there. Opened straight from a file, they're kept only
+    // until the page is closed.
     const signUpButton = form.querySelector('button[type="submit"]');
     const rosterStatus = document.getElementById('roster-status');
-    let signups = []; // { id, name, session, date: "YYYY-MM-DD", createdAt }
+    let signups = []; // { id, name, session, date: "YYYY-MM-DD", attended, yours }
 
-    // Each session on each Thursday holds this many people
-    const SPOTS_PER_SESSION = 10;
+    // Each session on each Thursday holds this many people (the server has the final say)
+    let SPOTS_PER_SESSION = 10;
 
-    // Who is viewing, so people can change or cancel only their own signups.
-    // Club leaders (the page's owner and editors) can also mark attendance.
-    let myId = null;
+    // Club leaders can mark attendance
     let isLeader = false;
-
-    function memoryStore() {
-      let next = 1;
-      isLeader = true; // on your own computer, you're the club leader
-      return {
-        saved: false,
-        async add(data) { const id = `m${next++}`; signups = [...signups, { id, ...data }]; renderRoster(); return id; },
-        async replace(id, data) { signups = signups.map((s) => (s.id === id ? { id, ...data } : s)); renderRoster(); return id; },
-        async remove(id) { signups = signups.filter((s) => s.id !== id); renderRoster(); },
-        async markAttended(id, attended) { signups = signups.map((s) => (s.id === id ? { ...s, attended } : s)); renderRoster(); },
-      };
-    }
-
-    async function connectStore() {
-      const db = window.claude?.use ? await window.claude.use('db') : null;
-      if (!db) {
-        rosterStatus.textContent = 'This copy of the page keeps signups only until you close it.';
-        return memoryStore();
-      }
-
-      // Viewers who can only look (not sign up) see the roster but not the form.
-      const user = await window.claude.use('user');
-      if (user) {
-        myId = await user.id();
-        isLeader = await user.canEdit();
-      }
-      if (user && (await user.can('data.write')) === false) {
-        signUpButton.disabled = true;
-        showMessage('You can see the roster, but this page is view-only for you, so you can\'t sign up here.', 'error');
-      }
-
-      const signupsRef = db.collection('signups');
-      const slowTimer = setTimeout(() => {
-        rosterStatus.textContent = 'The roster can\'t be reached right now. It will appear when the connection comes back.';
-      }, 10000);
-      signupsRef.orderBy('createdAt').limit(1000).onSnapshot(
-        (snap) => {
-          if (!snap.metadata.fromCache) {
-            clearTimeout(slowTimer);
-            rosterStatus.textContent = '';
-          }
-          signups = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
-          renderRoster();
-        },
-        () => {
-          clearTimeout(slowTimer);
-          rosterStatus.textContent = 'The roster stopped updating. Reload the page to see the latest signups.';
-        },
-      );
-      renderRoster();
-      return {
-        saved: true,
-        async add(data) { const ref = await signupsRef.add(data); return ref.id; },
-        async replace(id, data) { await signupsRef.doc(id).set(data); return id; },
-        async remove(id) { await signupsRef.doc(id).delete(); },
-        async markAttended(id, attended) { await signupsRef.doc(id).update({ attended }); },
-      };
-    }
-    const storeReady = connectStore();
 
     // "brock  POWELL " and "Brock Powell" are the same person
     const sameName = (a, b) => a.trim().replace(/\s+/g, ' ').toLowerCase() === b.trim().replace(/\s+/g, ' ').toLowerCase();
     const dayLabel = (iso) => dateFromIso(iso).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
 
-    // A signup belongs to whoever made it. Signups that don't record who made
-    // them (like the club's example names) can be changed by anyone who knows
-    // the name and time slot.
-    function ownsSignup(s) {
-      if (!s.by) return true;
-      return myId !== null && s.by === myId;
-    }
+    // A signup belongs to the browser that made it. The server marks each one
+    // "yours" or not; examples with no owner can be changed by anyone.
+    const ownsSignup = (s) => s.yours !== false;
 
     const takenSpots = (iso, session) => signups.filter((s) => s.date === iso && s.session === session).length;
     const spotsLeft = (iso, session) => Math.max(0, SPOTS_PER_SESSION - takenSpots(iso, session));
+
+    // Browser storage can be blocked; fall back to a value that lasts for this visit
+    function remember(storage, key, makeValue) {
+      try {
+        let value = storage.getItem(key);
+        if (!value) { value = makeValue(); storage.setItem(key, value); }
+        return value;
+      } catch {
+        return makeValue();
+      }
+    }
+    const randomId = () => (crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`);
+    // A private random code that marks this browser's signups as its own
+    const ownerToken = remember(localStorage, 'cookieLabOwner', randomId);
+
+    // Keeps signups in the page only (used when opened as a file)
+    function memoryStore() {
+      let next = 1;
+      isLeader = true; // on your own computer, you're the club leader
+      return {
+        saved: false,
+        async refresh() { renderRoster(); },
+        async signUp(data) {
+          const existing = signups.find((s) => s.date === data.date && sameName(s.name, data.name));
+          if (existing) {
+            if (existing.session === data.session) throw { code: 'duplicate', existing };
+            if (!ownsSignup(existing)) throw { code: 'taken', existing };
+          }
+          if (spotsLeft(data.date, data.session) === 0) throw { code: 'full', data };
+          if (existing) {
+            signups = signups.map((s) => (s.id === existing.id ? { ...s, session: data.session, name: data.name, attended: false } : s));
+          } else {
+            signups = [...signups, { id: `m${next++}`, ...data, attended: false, yours: true }];
+          }
+          renderRoster();
+        },
+        async cancel(match) { signups = signups.filter((s) => s.id !== match.id); renderRoster(); },
+        async markAttended(id, attended) { signups = signups.map((s) => (s.id === id ? { ...s, attended } : s)); renderRoster(); },
+      };
+    }
+
+    // Talks to the club's server
+    function serverStore(config) {
+      let leaderKey = '';
+      try { leaderKey = sessionStorage.getItem('cookieLabLeader') || ''; } catch { /* storage blocked */ }
+
+      async function call(method, path, body) {
+        const headers = { 'X-Owner-Token': ownerToken };
+        if (body) headers['Content-Type'] = 'application/json';
+        if (leaderKey) headers['X-Leader-Key'] = leaderKey;
+        const res = await fetch(path, { method, headers, body: body ? JSON.stringify(body) : undefined });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw { code: data.error || 'network', existing: data.existing, data: { session: data.session, date: data.date } };
+        return data;
+      }
+
+      const store = {
+        saved: true,
+        leaderEnabled: config.leaderEnabled,
+        async refresh() {
+          try {
+            signups = await call('GET', '/api/signups');
+            rosterStatus.textContent = '';
+          } catch {
+            rosterStatus.textContent = 'The roster can\'t be reached right now. It will update when the connection comes back.';
+          }
+          renderRoster();
+        },
+        async signUp(data) {
+          await call('POST', '/api/signups', data);
+          await store.refresh();
+        },
+        async cancel(match) {
+          await call('POST', '/api/signups/cancel', { name: match.name, date: match.date, session: match.session });
+          await store.refresh();
+        },
+        async markAttended(id, attended) {
+          await call('PATCH', `/api/signups/${id}/attendance`, { attended });
+          await store.refresh();
+        },
+        async unlockLeader(code) {
+          leaderKey = code;
+          try {
+            await call('POST', '/api/leader');
+          } catch (err) {
+            leaderKey = '';
+            throw err;
+          }
+          try { sessionStorage.setItem('cookieLabLeader', code); } catch { /* storage blocked */ }
+          isLeader = true;
+          renderRoster();
+        },
+      };
+      if (leaderKey) store.unlockLeader(leaderKey).catch(() => {});
+      return store;
+    }
+
+    // "Club leader? Mark attendance": only shown when the server has a leader code set
+    function setUpLeaderBox(store) {
+      if (!store.leaderEnabled) return;
+      const box = document.getElementById('leader-box');
+      const leaderForm = document.getElementById('leader-form');
+      const codeInput = document.getElementById('leader-code');
+      const note = document.getElementById('leader-note');
+      box.hidden = false;
+      leaderForm.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const code = codeInput.value.trim();
+        if (!code) { note.textContent = 'Type the leader code first.'; codeInput.focus(); return; }
+        try {
+          await store.unlockLeader(code);
+          codeInput.value = '';
+          leaderForm.hidden = true;
+          note.textContent = 'Attendance is unlocked. Choose a Thursday that has happened and tick who came.';
+        } catch {
+          note.textContent = 'That code isn\'t right. Check it with the club leader and try again.';
+          codeInput.select();
+        }
+      });
+    }
+
+    async function connectStore() {
+      if (location.protocol.startsWith('http')) {
+        try {
+          const res = await fetch('/api/config');
+          if (res.ok) {
+            const config = await res.json();
+            SPOTS_PER_SESSION = config.spotsPerSession || SPOTS_PER_SESSION;
+            const store = serverStore(config);
+            setUpLeaderBox(store);
+            await store.refresh();
+            // Pick up other people's signups every 20 seconds while the page is open
+            setInterval(() => { if (!document.hidden) store.refresh(); }, 20000);
+            return store;
+          }
+        } catch { /* no server: fall through */ }
+      }
+      rosterStatus.textContent = 'This copy of the page keeps signups only until you close it.';
+      return memoryStore();
+    }
+    const storeReady = connectStore();
 
     // Show "7 spots left" or "Full" beside each session for the chosen Thursday.
     // A full session can't be picked.
@@ -732,19 +843,7 @@
     // - a session with no spots left is refused
     async function saveSignup(data) {
       const store = await storeReady;
-      const existing = signups.find((s) => s.date === data.date && sameName(s.name, data.name));
-      if (existing) {
-        if (existing.session === data.session) throw { code: 'duplicate', existing };
-        if (!ownsSignup(existing)) throw { code: 'taken', existing };
-      }
-      if (spotsLeft(data.date, data.session) === 0) throw { code: 'full', data };
-      if (existing) return store.replace(existing.id, { ...data, createdAt: existing.createdAt, by: existing.by ?? data.by });
-      return store.add(data);
-    }
-
-    async function cancelSignup(id) {
-      const store = await storeReady;
-      await store.remove(id);
+      await store.signUp(data);
     }
 
     // Cancel My Signup: the name, Thursday and session must match a signup exactly
@@ -753,7 +852,8 @@
       const entry = readForm();
       if (!entry) return;
       const { name, thursday, selected } = entry;
-      await storeReady;
+      const store = await storeReady;
+      await store.refresh(); // check against the latest signups
 
       const match = signups.find((s) => s.date === thursday.dataset.iso && s.session === selected.value && sameName(s.name, name));
       if (!match) {
@@ -772,12 +872,20 @@
       const yes = smallButton('Yes, cancel', 'primary', async () => {
         yes.disabled = true;
         try {
-          await cancelSignup(match.id);
+          await store.cancel(match);
           showMessage(`${match.name}'s signup for ${match.session} on ${thursday.value} was canceled.`, 'notice');
           cancelButton.focus();
-        } catch {
-          yes.disabled = false;
-          showMessage('⚠ The signup couldn\'t be canceled. Please try again.', 'error', yes, keep);
+        } catch (err) {
+          const code = err && err.code;
+          if (code === 'not_yours') {
+            showMessage(`⚠ ${match.name}'s spot can only be canceled by the person who made the signup.`, 'error');
+          } else if (code === 'not_found') {
+            showMessage(`⚠ That signup was already canceled.`, 'error');
+            store.refresh();
+          } else {
+            yes.disabled = false;
+            showMessage('⚠ The signup couldn\'t be canceled. Please try again.', 'error', yes, keep);
+          }
         }
       });
       showMessage(`Cancel ${match.name}'s spot in ${match.session} on ${thursday.value}?`, 'notice', yes, keep);
@@ -821,24 +929,24 @@
         const { name, thursday, selected } = entry;
         signUpButton.disabled = true;
         try {
-          const id = await saveSignup({
+          await saveSignup({
             name,
             session: selected.value,
             date: thursday.dataset.iso,
-            createdAt: new Date().toISOString(),
-            by: myId,
           });
-          showSaved({ id, name, session: selected.value, dateLabel: thursday.value });
+          showSaved({ name, session: selected.value, dateLabel: thursday.value });
         } catch (err) {
           const code = err && err.code;
-          if (code === 'duplicate') {
+          if (code === 'duplicate' && !err.existing) {
+            showMessage(`⚠ ${name} is already signed up on ${thursday.value}.`, 'error');
+          } else if (code === 'duplicate') {
             showMessage(`⚠ ${err.existing.name} is already signed up for ${err.existing.session} on ${dayLabel(err.existing.date)}.`, 'error');
           } else if (code === 'taken') {
             showMessage(`⚠ ${err.existing.name} is already signed up for ${err.existing.session} on ${dayLabel(err.existing.date)}. Only the person who signed up can change it.`, 'error');
           } else if (code === 'full') {
             showMessage(`⚠ ${err.data.session} on ${dayLabel(err.data.date)} is full. Please choose another session or Thursday.`, 'error');
-          } else if (code === 'invalid_argument') {
-            showMessage('⚠ Your signup couldn\'t be saved because this page is view-only for you.', 'error');
+          } else if (code === 'date_invalid') {
+            showMessage('⚠ That Thursday is no longer open for signups. Please reload the page and choose another.', 'error');
           } else {
             showMessage('⚠ Your signup couldn\'t be saved. Please press Sign Up again.', 'error');
           }

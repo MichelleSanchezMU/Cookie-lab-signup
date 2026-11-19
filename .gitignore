@@ -1,0 +1,19 @@
+# Secrets and settings
+.env
+.env.*
+
+# Local database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+
+# Mac
+.DS_Store
+
+# Claude Code local settings
+.claude/
